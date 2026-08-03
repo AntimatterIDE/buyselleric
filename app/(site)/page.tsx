@@ -20,9 +20,27 @@ export const metadata: Metadata = createMetadata({
   path: "/",
 });
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  name: siteConfig.agentName,
+  description: siteConfig.description,
+  url: siteConfig.url,
+  areaServed: {
+    "@type": "City",
+    name: "Atlanta",
+    sameAs: "https://en.wikipedia.org/wiki/Atlanta",
+  },
+  priceRange: "$",
+};
+
 export default function HomePage(): ReactNode {
   return (
     <main id="main-content" className="relative z-10 w-full flex-1 bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* RSC preload — single format to avoid double-download with <picture> */}
       <link rel="preload" as="image" href={siteImages.heroPoster} fetchPriority="high" />
       <HeroLoader />
