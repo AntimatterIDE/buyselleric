@@ -4,7 +4,7 @@ import { absoluteResourceUrl, truncateMetaDescription } from "@/lib/seo";
 
 export { siteConfig };
 
-/** Always set in meta tags — `app/opengraph-image.tsx` serves the PNG (icon + Buy/Sell/Eric). */
+/** Always set in meta tags — `app/opengraph-image.tsx` serves the PNG (cartoon Eric + Buy/Sell/Eric). */
 export const defaultSocialImage = {
   url: "/opengraph-image",
   width: 1200,
@@ -62,7 +62,7 @@ export const baseMetadata: Metadata = {
     description: siteConfig.description,
     images: [defaultSocialImage.url],
   },
-  /** Tab + PWA: `app/icon.svg` + `app/apple-icon.svg` (house). Do not add `app/favicon.ico` — the default is the Vercel triangle and it is listed before SVG in `<head>`. */
+  /** Tab + PWA: `app/icon.svg` + `app/apple-icon.svg` (cartoon Eric). Do not add `app/favicon.ico` — the default is the Vercel triangle and it is listed before SVG in `<head>`. */
   manifest: "/site.webmanifest",
 };
 

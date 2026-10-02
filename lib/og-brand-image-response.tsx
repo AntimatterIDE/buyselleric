@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-/** Default social preview: tab house icon + stacked “Buy / Sell / Eric”. */
+/** Default social preview: cartoon Eric + stacked “Buy / Sell / Eric”. */
 export async function ogBrandImageResponse(): Promise<ImageResponse> {
   const svg = readFileSync(join(process.cwd(), "app", "icon.svg"), "utf8");
   const iconSrc = `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;

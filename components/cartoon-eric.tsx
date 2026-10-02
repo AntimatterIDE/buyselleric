@@ -38,18 +38,15 @@ export function CartoonEric({
         <title>Cartoon Eric</title>
         <ellipse cx="60" cy="132" rx="22" ry="4" fill="currentColor" opacity="0.12" />
 
-        <rect x="36" y="80" width="48" height="48" rx="8" fill={SUIT} />
-        <path d="M50 86h6l4 18h-6L50 86z" fill="#121A26" />
-        <path d="M70 86h-6l-4 18h6L70 86z" fill="#121A26" />
-        <rect x="55" y="84" width="10" height="26" fill={SHIRT} />
-        <path d="M57.5 86h5L60 106z" fill={TIE} />
+        <rect x="16" y="84" width="22" height="28" rx="11" fill={SUIT} />
+        <rect x="82" y="84" width="22" height="28" rx="11" fill={SUIT} />
+        <circle cx="27" cy="112" r="7" fill={SKIN} />
+        <circle cx="93" cy="112" r="7" fill={SKIN} />
 
-        <rect x="20" y="86" width="16" height="34" rx="8" fill={SUIT} />
-        <rect x="84" y="86" width="16" height="34" rx="8" fill={SUIT} />
-        <circle cx="28" cy="122" r="6.5" fill={SKIN} />
-        <circle cx="92" cy="122" r="6.5" fill={SKIN} />
-
-        <rect x="52" y="72" width="16" height="12" rx="4" fill={SKIN} />
+        <rect x="34" y="80" width="52" height="40" rx="10" fill={SUIT} />
+        <rect x="51" y="70" width="18" height="12" fill={SKIN} />
+        <rect x="51" y="80" width="18" height="26" fill={SHIRT} />
+        <path d="M56 84h8l-4 18z" fill={TIE} />
 
         <rect x="34" y="22" width="52" height="52" rx="14" fill={SKIN} />
         <path
