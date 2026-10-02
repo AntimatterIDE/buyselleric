@@ -6,7 +6,8 @@ import { BuyerSchemaError, cancelOwnAppointment, ensureProfile, updateProfile } 
 import { safeNextPath } from "@/lib/buyer/paths";
 import { getBuyer } from "@/lib/buyer/session";
 import { normalizePreferences } from "@/lib/buyer/time";
-import { siteConfig } from "@/lib/config";
+import { absoluteSiteUrl } from "@/lib/config";
+import { mailAppointmentUpdate } from "@/lib/mail";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthFormState =
@@ -25,6 +26,9 @@ function friendlyAuthError(message: string): string {
   }
   if (/password/i.test(message) && /weak|short|least/i.test(message)) {
     return "Use a password of at least 8 characters.";
+  }
+  if (/fetch failed|failed to fetch|network/i.test(message)) {
+    return "We could not reach the account service. Try again in a moment.";
   }
   return message;
 }
@@ -52,7 +56,7 @@ export async function signUpAccount(
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${siteConfig.url}/account`,
+      emailRedirectTo: absoluteSiteUrl(`/account/confirm?next=${encodeURIComponent(next)}`),
     },
   });
   if (error) return { ok: false, message: friendlyAuthError(error.message) };
@@ -80,6 +84,54 @@ export async function signInAccount(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false, message: friendlyAuthError(error.message) };
   redirect(next);
+}
+
+export async function requestPasswordReset(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false, message: "Accounts are not configured yet." };
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, message: "That email does not look right." };
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: absoluteSiteUrl("/account/confirm?next=/account/reset"),
+  });
+  if (error) {
+    if (/rate|too many/i.test(error.message)) {
+      return { ok: false, message: "Too many emails just went out. Wait a few minutes and try again." };
+    }
+    return { ok: false, message: "Could not send that email. Try again in a moment." };
+  }
+  return {
+    ok: true,
+    message: "If that email has an account, a reset link from Eric is on the way.",
+  };
+}
+
+export async function updatePassword(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false, message: "Accounts are not configured yet." };
+
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) return { ok: false, message: "Use a password of at least 8 characters." };
+  if (password !== confirm) return { ok: false, message: "Those passwords do not match." };
+
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) {
+    return { ok: false, message: "Open the reset link from your email, then choose a new password." };
+  }
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { ok: false, message: friendlyAuthError(error.message) };
+  redirect("/account");
 }
 
 export async function signOutAccount(): Promise<void> {
@@ -134,8 +186,17 @@ export async function cancelAppointmentAction(formData: FormData): Promise<void>
   const id = String(formData.get("id") ?? "").trim();
   if (!id) redirect("/account");
   try {
-    await ensureProfile(buyer.supabase, buyer.user);
-    await cancelOwnAppointment(buyer.supabase, buyer.user.id, id);
+    const profile = await ensureProfile(buyer.supabase, buyer.user);
+    const row = await cancelOwnAppointment(buyer.supabase, buyer.user.id, id);
+    await mailAppointmentUpdate({
+      buyerEmail: profile.email || buyer.user.email || "",
+      buyerName: profile.full_name,
+      type: row.type,
+      startsAt: row.starts_at,
+      event: "cancelled",
+      listingTitle: row.listing_title,
+      listingAddress: row.listing_address,
+    });
   } catch (err) {
     console.error("cancelAppointment", err);
   }

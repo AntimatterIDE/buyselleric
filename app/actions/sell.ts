@@ -1,5 +1,7 @@
 "use server";
 
+import { siteConfig } from "@/lib/config";
+import { mailEricAndGuest } from "@/lib/mail";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type SellFormState = { ok: true } | { ok: false; message: string } | null;
@@ -48,6 +50,25 @@ export async function submitSellInquiry(
     console.error("submitSellInquiry", error.message);
     return { ok: false, message: "Something went wrong. Please try again." };
   }
+
+  const where = [property_address, city, state, postal_code].filter(Boolean).join(", ");
+  await mailEricAndGuest({
+    guestEmail: email,
+    ericSubject: `New seller inquiry from ${full_name}`,
+    ericText: [
+      full_name,
+      email,
+      phone,
+      where,
+      property_type,
+      timeline,
+      message,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    guestSubject: "Eric got your note about selling",
+    guestText: `Thanks, ${full_name}. Eric has the details on your home and will follow up.\n\nYou can also reach him at ${siteConfig.phoneDisplay}.`,
+  });
 
   return { ok: true };
 }

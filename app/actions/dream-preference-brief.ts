@@ -1,5 +1,7 @@
 "use server";
 
+import { siteConfig } from "@/lib/config";
+import { mailEricAndGuest } from "@/lib/mail";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type DreamBriefFormState =
@@ -83,10 +85,28 @@ export async function submitDreamPreferenceBrief(
         console.error("submitDreamPreferenceBrief retry", retry.error.message);
         return { ok: false, message: "Something went wrong. Please try again." };
       }
+      await mailDreamBrief(full_name, email, phone, dream_brief, message);
       return { ok: true };
     }
     return { ok: false, message: "Something went wrong. Please try again." };
   }
 
+  await mailDreamBrief(full_name, email, phone, dream_brief, message);
   return { ok: true };
+}
+
+async function mailDreamBrief(
+  fullName: string,
+  email: string,
+  phone: string,
+  dreamBrief: string,
+  message: string,
+): Promise<void> {
+  await mailEricAndGuest({
+    guestEmail: email,
+    ericSubject: `Dream home brief from ${fullName}`,
+    ericText: [fullName, email, phone, dreamBrief, message].filter(Boolean).join("\n\n"),
+    guestSubject: "Eric got your dream home brief",
+    guestText: `Thanks, ${fullName}. Eric has what you are looking for and will follow up.\n\nYou can also reach him at ${siteConfig.phoneDisplay}.`,
+  });
 }

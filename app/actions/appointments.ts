@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { BuyerSchemaError, createAppointmentRequest } from "@/lib/buyer/data";
+import { BuyerSchemaError, createAppointmentRequest, ensureProfile } from "@/lib/buyer/data";
 import { wallTimeInZoneToUtc } from "@/lib/buyer/time";
 import { getBuyer } from "@/lib/buyer/session";
 import type { AppointmentType } from "@/lib/buyer/types";
+import { mailAppointmentUpdate } from "@/lib/mail";
 
 export type BookingFormState = { ok: true; message: string } | { ok: false; message: string } | null;
 
@@ -30,7 +31,7 @@ export async function requestAppointment(
   const listingSource = listingSourceRaw === "mls" || listingSourceRaw === "manual" ? listingSourceRaw : "";
 
   try {
-    await createAppointmentRequest(buyer.supabase, buyer.user.id, {
+    const row = await createAppointmentRequest(buyer.supabase, buyer.user.id, {
       type,
       startsAt,
       listingSource,
@@ -39,6 +40,17 @@ export async function requestAppointment(
       listingAddress: String(formData.get("listing_address") ?? ""),
       listingPath: String(formData.get("listing_path") ?? ""),
       notes: String(formData.get("notes") ?? ""),
+    });
+    const profile = await ensureProfile(buyer.supabase, buyer.user);
+    await mailAppointmentUpdate({
+      buyerEmail: profile.email || buyer.user.email || "",
+      buyerName: profile.full_name,
+      type: row.type,
+      startsAt: row.starts_at,
+      event: "requested",
+      listingTitle: row.listing_title,
+      listingAddress: row.listing_address,
+      note: row.notes,
     });
   } catch (err) {
     if (err instanceof BuyerSchemaError) return { ok: false, message: err.message };

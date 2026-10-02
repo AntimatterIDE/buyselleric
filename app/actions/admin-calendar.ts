@@ -12,6 +12,7 @@ import {
   updateGoogleEvent,
   type CalendarEventInput,
 } from "@/lib/google-calendar";
+import { mailAppointmentUpdate } from "@/lib/mail";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type CalendarActionResult = { ok: boolean; message: string };
@@ -41,6 +42,10 @@ async function loadAppointment(id: string): Promise<AppointmentWithBuyer | null>
     .maybeSingle();
   if (error || !data) return null;
   return data as AppointmentWithBuyer;
+}
+
+function profileEmail(row: AppointmentWithBuyer): string {
+  return row.profiles?.email ?? "";
 }
 
 function eventInput(row: AppointmentWithBuyer): CalendarEventInput {
@@ -96,6 +101,17 @@ export async function confirmAppointment(id: string): Promise<CalendarActionResu
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin/calendar");
   revalidatePath("/account");
+  await mailAppointmentUpdate({
+    buyerEmail: profileEmail(row),
+    buyerName: row.profiles?.full_name ?? "",
+    type: row.type,
+    startsAt: row.starts_at,
+    event: "confirmed",
+    listingTitle: row.listing_title,
+    listingAddress: row.listing_address,
+    meetUrl,
+    note: row.notes,
+  });
   return { ok: true, message: `Confirmed.${googleNote}` };
 }
 
@@ -125,6 +141,16 @@ export async function declineAppointment(id: string, note: string): Promise<Cale
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin/calendar");
   revalidatePath("/account");
+  await mailAppointmentUpdate({
+    buyerEmail: profileEmail(row),
+    buyerName: row.profiles?.full_name ?? "",
+    type: row.type,
+    startsAt: row.starts_at,
+    event: "declined",
+    listingTitle: row.listing_title,
+    listingAddress: row.listing_address,
+    note,
+  });
   return { ok: true, message: "Declined." };
 }
 
@@ -171,6 +197,17 @@ export async function rescheduleAppointment(
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin/calendar");
   revalidatePath("/account");
+  await mailAppointmentUpdate({
+    buyerEmail: profileEmail(row),
+    buyerName: row.profiles?.full_name ?? "",
+    type: row.type,
+    startsAt: startsAt.toISOString(),
+    event: "rescheduled",
+    listingTitle: row.listing_title,
+    listingAddress: row.listing_address,
+    meetUrl,
+    note: row.notes,
+  });
   return { ok: true, message: "Time updated." };
 }
 

@@ -19,7 +19,7 @@ export const metadata: Metadata = createMetadata({
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }): Promise<ReactNode> {
   const buyer = await getBuyer();
   const params = await searchParams;
@@ -32,6 +32,11 @@ export default async function LoginPage({
         <p className={eyebrow}>BuySellEric</p>
         <h1 className={`${sectionTitle} mt-3`}>Log in</h1>
         <p className={`${lead} mt-4`}>Your wishes, saved homes, and time with Eric live here.</p>
+        {params.error === "link" ? (
+          <p className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+            That email link expired or was already used. Request a new one.
+          </p>
+        ) : null}
         <AccountAuthForm mode="login" nextPath={nextPath} />
       </div>
     </main>

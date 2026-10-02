@@ -46,6 +46,13 @@ export function AccountAuthForm({
           className={accountFieldClass}
         />
       </label>
+      {mode === "login" ? (
+        <p className="text-sm">
+          <Link href="/account/forgot" className="font-semibold text-foreground underline-offset-4 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
+      ) : null}
       {state?.ok === false ? (
         <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
           {state.message}

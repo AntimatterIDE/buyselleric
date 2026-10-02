@@ -62,6 +62,14 @@ function resolveSiteUrl(): string {
   return "https://buyselleric.com";
 }
 
+/** Absolute URL on the public site. Apex links use www so email tokens survive the redirect. */
+export function absoluteSiteUrl(path: string): string {
+  const base = resolveSiteUrl().replace(/\/$/, "");
+  const url = new URL(path, `${base}/`);
+  if (url.hostname === "buyselleric.com") url.hostname = "www.buyselleric.com";
+  return url.toString();
+}
+
 export const siteConfig = {
   brandSlug: "buyselleric",
   name: "BuySellEric",

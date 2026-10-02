@@ -344,7 +344,7 @@ export async function cancelOwnAppointment(
   supabase: SupabaseClient,
   userId: string,
   appointmentId: string,
-): Promise<void> {
+): Promise<AppointmentRow> {
   const { data, error } = await supabase
     .from("appointments")
     .select("*")
@@ -372,6 +372,7 @@ export async function cancelOwnAppointment(
     .eq("user_id", userId);
   throwIfSchema(updateError);
   if (updateError) throw new Error(updateError.message);
+  return row;
 }
 
 export async function ensureConversation(

@@ -1,5 +1,7 @@
 "use server";
 
+import { siteConfig } from "@/lib/config";
+import { mailEricAndGuest } from "@/lib/mail";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ListingInquiryFormState =
@@ -52,6 +54,17 @@ export async function submitListingInquiry(
     console.error("submitListingInquiry", error.message);
     return { ok: false, message: "Something went wrong. Please try again." };
   }
+
+  const home = listing_title || "a home";
+  await mailEricAndGuest({
+    guestEmail: email,
+    ericSubject: `New inquiry from ${full_name}`,
+    ericText: [full_name, email, phone, home, listing_path, preferred_times, message]
+      .filter(Boolean)
+      .join("\n"),
+    guestSubject: "Eric got your message",
+    guestText: `Thanks, ${full_name}. Eric has your note about ${home} and will follow up.\n\nYou can also reach him at ${siteConfig.phoneDisplay}.`,
+  });
 
   return { ok: true };
 }
