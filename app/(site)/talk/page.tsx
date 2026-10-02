@@ -22,9 +22,19 @@ export const metadata: Metadata = createMetadata({
   path: "/talk",
 });
 
-export default async function TalkPage(): Promise<ReactNode> {
+export default async function TalkPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prompt?: string; t?: string }>;
+}): Promise<ReactNode> {
+  const params = await searchParams;
+  const openingPrompt = typeof params.prompt === "string" ? params.prompt.trim().slice(0, 500) : "";
+  const openerToken = typeof params.t === "string" ? params.t.slice(0, 20) : "";
+  const talkNext = openingPrompt
+    ? `/talk?${new URLSearchParams({ prompt: openingPrompt, t: openerToken }).toString()}`
+    : "/talk";
   const buyer = await getBuyer();
-  if (!buyer) redirect("/account/signup?next=/talk");
+  if (!buyer) redirect(`/account/signup?next=${encodeURIComponent(talkNext)}`);
 
   let messages: Awaited<ReturnType<typeof listEricMessages>> = [];
   let savedIds: string[] = [];
@@ -56,7 +66,12 @@ export default async function TalkPage(): Promise<ReactNode> {
   return (
     <main id="main-content" className={pageMain} style={innerPageMainTopPadding}>
       <div className={`${siteContainer} max-w-3xl`}>
-        <EricChat initialMessages={messages} savedIds={savedIds} />
+        <EricChat
+          initialMessages={messages}
+          savedIds={savedIds}
+          openingPrompt={openingPrompt}
+          openerToken={openerToken}
+        />
       </div>
     </main>
   );

@@ -1,15 +1,18 @@
 "use client";
 
-import { MapPin, Search } from "lucide-react";
-import Link from "next/link";
+import { MapPin, MessageCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ChatWithEricPrompt } from "@/components/chat-with-eric-prompt";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { SearchSuggestionsList } from "@/components/search-suggestions-list";
 import { useListingSearchSuggestions } from "@/components/use-listing-search-suggestions";
 import type { SearchSuggestion } from "@/lib/listing-search-suggest";
 
+type SearchMode = "location" | "eric";
+
 export function HeroSearch() {
   const router = useRouter();
+  const [mode, setMode] = useState<SearchMode>("eric");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -17,8 +20,9 @@ export function HeroSearch() {
   const { suggestions, loading, runSuggest } = useListingSearchSuggestions();
 
   useEffect(() => {
+    if (mode !== "location") return;
     runSuggest(query);
-  }, [query, runSuggest]);
+  }, [query, runSuggest, mode]);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -89,10 +93,44 @@ export function HeroSearch() {
     goSearch(s.value);
   };
 
-  const panelOpen = open && query.trim().length >= 2;
+  const panelOpen = mode === "location" && open && query.trim().length >= 2;
 
   return (
     <div className="w-full max-w-xl">
+      <div
+        className="mb-2 inline-flex rounded-full border border-white/25 bg-black/25 p-1 backdrop-blur-md"
+        role="group"
+        aria-label="Search mode"
+      >
+        <button
+          type="button"
+          onClick={() => setMode("location")}
+          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+            mode === "location"
+              ? "bg-white text-neutral-950 shadow-sm"
+              : "text-white/85 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden />
+          Location
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("eric")}
+          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+            mode === "eric"
+              ? "bg-white text-neutral-950 shadow-sm"
+              : "text-white/85 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+          Chat with Eric
+        </button>
+      </div>
+
+      {mode === "eric" ? (
+        <ChatWithEricPrompt variant="hero" />
+      ) : (
       <form onSubmit={handleSubmit} className="w-full">
         <div ref={wrapRef} className="relative">
           <div className="flex items-center gap-2 rounded-full border-2 border-foreground/20 bg-background/80 shadow-lg backdrop-blur-md transition-colors focus-within:border-ring focus-within:shadow-xl">
@@ -147,12 +185,7 @@ export function HeroSearch() {
           ) : null}
         </div>
       </form>
-      <Link
-        href="/talk"
-        className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-black/30 px-4 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-black/45"
-      >
-        Talk to Eric
-      </Link>
+      )}
     </div>
   );
 }

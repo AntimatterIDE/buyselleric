@@ -1,13 +1,15 @@
 "use client";
 
-import { Search } from "lucide-react";
-import Link from "next/link";
+import { MessageCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ChatWithEricPrompt } from "@/components/chat-with-eric-prompt";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useListingsNavigate } from "@/components/listings-nav-context";
 import { SearchSuggestionsList } from "@/components/search-suggestions-list";
 import { useListingSearchSuggestions } from "@/components/use-listing-search-suggestions";
 import type { SearchSuggestion } from "@/lib/listing-search-suggest";
+
+type SearchMode = "location" | "eric";
 
 export function ListingsSearchBar({
   defaultValue = "",
@@ -19,6 +21,7 @@ export function ListingsSearchBar({
 }) {
   const router = useRouter();
   const navigate = useListingsNavigate();
+  const [mode, setMode] = useState<SearchMode>("location");
   const [query, setQuery] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -30,8 +33,9 @@ export function ListingsSearchBar({
   }, [defaultValue]);
 
   useEffect(() => {
+    if (mode !== "location") return;
     runSuggest(query);
-  }, [query, runSuggest]);
+  }, [query, runSuggest, mode]);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -104,10 +108,43 @@ export function ListingsSearchBar({
     goSearch(s.value);
   };
 
-  const panelOpen = open && query.trim().length >= 2;
+  const panelOpen = mode === "location" && open && query.trim().length >= 2;
 
   return (
     <div className="w-full">
+      <div
+        className="mb-2 inline-flex rounded-full border border-border bg-muted/20 p-1"
+        role="group"
+        aria-label="Search mode"
+      >
+        <button
+          type="button"
+          onClick={() => setMode("location")}
+          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+            mode === "location"
+              ? "bg-foreground text-background"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden />
+          Location
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("eric")}
+          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+            mode === "eric"
+              ? "bg-foreground text-background"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+          Chat with Eric
+        </button>
+      </div>
+      {mode === "eric" ? (
+        <ChatWithEricPrompt />
+      ) : (
       <form onSubmit={handleSubmit} className="w-full">
         <div ref={wrapRef} className="relative">
           <div className="flex items-center gap-2 rounded-full border border-border bg-muted/20 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 sm:gap-3">
@@ -151,9 +188,7 @@ export function ListingsSearchBar({
           ) : null}
         </div>
       </form>
-      <Link href="/talk" className="mt-3 inline-flex text-sm font-semibold text-foreground underline-offset-4 hover:underline">
-        Talk to Eric about what you want
-      </Link>
+      )}
     </div>
   );
 }

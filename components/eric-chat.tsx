@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CartoonEric, type EricExpression } from "@/components/cartoon-eric";
 import { SaveHomeButton } from "@/components/save-home-button";
@@ -14,16 +15,22 @@ const STARTERS = ["Show me homes", "Update my wishes", "Book a showing"];
 export function EricChat({
   initialMessages,
   savedIds,
+  openingPrompt = "",
+  openerToken = "",
 }: {
   initialMessages: EricThreadMessage[];
   savedIds: string[];
+  openingPrompt?: string;
+  openerToken?: string;
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
+  const opened = useRef(false);
   const last = messages.at(-1);
   const expression = expressionFor(pending, last);
 
@@ -67,6 +74,20 @@ export function EricChat({
       setPending(false);
     }
   }
+
+  useEffect(() => {
+    const trimmed = openingPrompt.trim();
+    if (!trimmed || !openerToken || opened.current) return;
+    opened.current = true;
+    const key = `buyselleric:eric-open:${openerToken}`;
+    if (sessionStorage.getItem(key)) {
+      router.replace("/talk");
+      return;
+    }
+    sessionStorage.setItem(key, "1");
+    void send(trimmed);
+    router.replace("/talk");
+  }, [openingPrompt, openerToken, router]);
 
   return (
     <div className="flex min-h-[70vh] flex-col rounded-3xl border border-border bg-muted/15">

@@ -4,6 +4,12 @@ import { motion, useReducedMotion } from "motion/react";
 
 export type EricExpression = "idle" | "listening" | "thinking" | "found" | "booked";
 
+const SKIN = "#8A5A3C";
+const HAIR = "#1C140F";
+const SUIT = "#1A2433";
+const SHIRT = "#F7F4EF";
+const TIE = "#6EB8C0";
+
 export function CartoonEric({
   expression = "idle",
   className = "h-24 w-24",
@@ -13,10 +19,13 @@ export function CartoonEric({
 }) {
   const reduce = useReducedMotion();
   const thinking = expression === "thinking";
-  const smile =
-    expression === "found" || expression === "booked"
-      ? "M38 62c4 6 12 8 20 8s16-2 20-8"
-      : "M42 64c3 4 8 6 16 6s13-2 16-6";
+  const wide = expression === "found" || expression === "booked" || expression === "listening";
+  const eyeY = thinking ? 40 : 44;
+  const smile = thinking
+    ? "M50 56h20"
+    : wide
+      ? "M46 54c4 10 24 10 28 0"
+      : "M48 55c3 7 21 7 24 0";
 
   return (
     <motion.div
@@ -27,30 +36,54 @@ export function CartoonEric({
     >
       <svg viewBox="0 0 120 140" className="h-full w-full" role="img">
         <title>Cartoon Eric</title>
-        <ellipse cx="60" cy="128" rx="28" ry="6" fill="currentColor" opacity="0.12" />
-        <path d="M34 78h52l8 42H26l8-42z" fill="#1a2d42" />
-        <path d="M56 78h8l2 42h-12l2-42z" fill="#6eb8c0" />
-        <circle cx="60" cy="52" r="30" fill="#f3d2b3" />
-        <path d="M32 48c2-18 14-28 28-28s26 10 28 28c-6-6-14-8-28-8s-22 2-28 8z" fill="#2a2118" />
-        <circle cx="48" cy="54" r="3.2" fill="#1a2d42" />
-        <circle cx="72" cy="54" r="3.2" fill="#1a2d42" />
-        <path d={smile} fill="none" stroke="#1a2d42" strokeWidth="2.4" strokeLinecap="round" />
+        <ellipse cx="60" cy="132" rx="22" ry="4" fill="currentColor" opacity="0.12" />
+
+        <rect x="36" y="80" width="48" height="48" rx="8" fill={SUIT} />
+        <path d="M50 86h6l4 18h-6L50 86z" fill="#121A26" />
+        <path d="M70 86h-6l-4 18h6L70 86z" fill="#121A26" />
+        <rect x="55" y="84" width="10" height="26" fill={SHIRT} />
+        <path d="M57.5 86h5L60 106z" fill={TIE} />
+
+        <rect x="20" y="86" width="16" height="34" rx="8" fill={SUIT} />
+        <rect x="84" y="86" width="16" height="34" rx="8" fill={SUIT} />
+        <circle cx="28" cy="122" r="6.5" fill={SKIN} />
+        <circle cx="92" cy="122" r="6.5" fill={SKIN} />
+
+        <rect x="52" y="72" width="16" height="12" rx="4" fill={SKIN} />
+
+        <rect x="34" y="22" width="52" height="52" rx="14" fill={SKIN} />
+        <rect x="34" y="18" width="52" height="20" rx="10" fill={HAIR} />
+        <g stroke="#3A2E26" strokeWidth="1.6" strokeLinecap="round">
+          <path d="M46 18v16" />
+          <path d="M54 18v16" />
+          <path d="M60 18v16" />
+          <path d="M66 18v16" />
+          <path d="M74 18v16" />
+        </g>
+
+        <circle cx="50" cy={eyeY} r="3.1" fill={HAIR} />
+        <circle cx="70" cy={eyeY} r="3.1" fill={HAIR} />
+        <circle cx="51" cy={eyeY - 1} r="0.9" fill="#fff" />
+        <circle cx="71" cy={eyeY - 1} r="0.9" fill="#fff" />
+
+        <path d={smile} fill="none" stroke={HAIR} strokeWidth="2.8" strokeLinecap="round" />
+
         {expression === "thinking" ? (
-          <g fill="#6eb8c0">
-            <circle cx="96" cy="28" r="3" />
-            <circle cx="104" cy="18" r="4" />
-            <circle cx="114" cy="10" r="5" />
+          <g fill={TIE}>
+            <circle cx="98" cy="28" r="3" />
+            <circle cx="106" cy="18" r="4" />
+            <circle cx="116" cy="10" r="5" />
           </g>
         ) : null}
         {expression === "found" ? (
-          <g transform="translate(86 18)">
-            <path d="M12 22V10l10-7 10 7v12h-8v-6h-4v6H12z" fill="#f6f4ef" stroke="#1a2d42" strokeWidth="1.6" />
+          <g transform="translate(92 10)">
+            <path d="M6 16V8l6-5 6 5v8H6z" fill="#f6f4ef" stroke="#1a2d42" strokeWidth="1.4" />
           </g>
         ) : null}
         {expression === "booked" ? (
-          <g transform="translate(84 16)">
-            <rect x="2" y="6" width="26" height="22" rx="3" fill="#f6f4ef" stroke="#1a2d42" strokeWidth="1.6" />
-            <path d="M2 12h26M8 4v6M22 4v6" stroke="#1a2d42" strokeWidth="1.6" strokeLinecap="round" />
+          <g transform="translate(90 8)">
+            <rect x="2" y="5" width="20" height="16" rx="3" fill="#f6f4ef" stroke="#1a2d42" strokeWidth="1.4" />
+            <path d="M2 10h20M7 3v4M17 3v4" stroke="#1a2d42" strokeWidth="1.4" strokeLinecap="round" />
           </g>
         ) : null}
       </svg>
