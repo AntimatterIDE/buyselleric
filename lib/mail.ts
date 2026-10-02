@@ -8,6 +8,7 @@ type SendInput = {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
 };
 
@@ -22,6 +23,7 @@ export async function sendEricMail(input: SendInput): Promise<boolean> {
     subject: input.subject,
     text: input.text,
   };
+  if (input.html) body.html = input.html;
   if (input.replyTo) body.reply_to = input.replyTo;
 
   try {
