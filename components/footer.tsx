@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EricMark } from "@/components/eric-mark";
 import { siteConfig } from "@/lib/config";
 import { ctaFooterOutline, ctaFooterPrimary } from "@/lib/cta-styles";
 import { siteContainer } from "@/lib/ui";
@@ -62,7 +63,10 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-x-10 lg:gap-y-10">
           <div className="lg:col-span-4">
             <p className={`${colHeading} mb-6`}>{siteConfig.name}</p>
-            <p className="text-4xl font-medium tracking-tight text-background">{siteConfig.brandSlug}</p>
+            <p className="flex items-center gap-3 text-4xl font-medium tracking-tight text-background">
+              <EricMark className="h-14 w-14 shrink-0" />
+              {siteConfig.brandSlug}
+            </p>
             <p className="mt-4 text-2xl font-medium tracking-tight text-background/70 sm:text-3xl lg:text-4xl">
               {siteConfig.tagline}
             </p>

@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useOverlay } from "@/lib/overlay-context";
+import { EricMark } from "@/components/eric-mark";
 import { siteConfig } from "@/lib/config";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -240,9 +241,10 @@ export function Header() {
       <div className="mx-auto flex max-w-360 items-center justify-between gap-3 sm:gap-4 2xl:max-w-450 3xl:max-w-550">
         <a
           href="/"
-          className="flex min-h-11 min-w-0 max-w-[calc(100%-3.5rem)] shrink items-center justify-center truncate rounded-xl bg-foreground/88 px-3.5 py-2.5 text-base font-semibold tracking-tight text-background shadow-lg shadow-foreground/10 backdrop-blur-lg transition-transform duration-150 hover:scale-105 active:scale-95 sm:max-w-none sm:min-h-[4.25rem] sm:rounded-2xl sm:px-7 sm:py-3 sm:text-2xl"
+          className="flex min-h-11 min-w-0 max-w-[calc(100%-3.5rem)] shrink items-center justify-center gap-2 rounded-xl bg-foreground/88 px-3.5 py-2.5 text-base font-semibold tracking-tight text-background shadow-lg shadow-foreground/10 backdrop-blur-lg transition-transform duration-150 hover:scale-105 active:scale-95 sm:max-w-none sm:min-h-[4.25rem] sm:gap-3 sm:rounded-2xl sm:px-7 sm:py-3 sm:text-2xl"
         >
-          {siteConfig.brandSlug}
+          <EricMark className="h-7 w-7 shrink-0 sm:h-11 sm:w-11" />
+          <span className="truncate">{siteConfig.brandSlug}</span>
         </a>
 
         {/* Mobile: icon-only hamburger — no section label, no overlap with logo */}
