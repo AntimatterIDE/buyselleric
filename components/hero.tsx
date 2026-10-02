@@ -108,7 +108,7 @@ export function HeroContent(): ReactNode {
     <>
       <HeroVideoOverlay />
       <div
-        className="relative z-10 mx-auto flex h-full min-h-[inherit] max-w-360 flex-col justify-center px-6 pb-[max(2.5rem,env(safe-area-inset-bottom)+1rem)] pt-[max(5.5rem,env(safe-area-inset-top)+3.5rem)] text-left sm:px-12 sm:pt-24 md:pb-16 lg:px-24 lg:pt-28 2xl:max-w-450 3xl:max-w-550"
+        className="relative z-10 mx-auto flex min-h-[inherit] max-w-360 flex-col justify-start px-6 pb-[max(2.5rem,env(safe-area-inset-bottom)+1rem)] pt-[max(6.5rem,env(safe-area-inset-top)+4.75rem)] text-left sm:px-12 sm:pt-36 md:pb-16 lg:px-24 2xl:max-w-450 3xl:max-w-550"
         style={{ perspective: "1200px" }}
       >
         <h1 className="text-balance text-[clamp(2rem,6.5vw,10rem)] leading-[1.06] tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-[clamp(2.5rem,7vw,11rem)]">

@@ -52,14 +52,10 @@ export function CartoonEric({
         <rect x="52" y="72" width="16" height="12" rx="4" fill={SKIN} />
 
         <rect x="34" y="22" width="52" height="52" rx="14" fill={SKIN} />
-        <rect x="34" y="18" width="52" height="20" rx="10" fill={HAIR} />
-        <g stroke="#3A2E26" strokeWidth="1.6" strokeLinecap="round">
-          <path d="M46 18v16" />
-          <path d="M54 18v16" />
-          <path d="M60 18v16" />
-          <path d="M66 18v16" />
-          <path d="M74 18v16" />
-        </g>
+        <path
+          d="M32 44C32 24 44 12 60 12s28 12 28 32c-6-12-16-16-28-16S38 32 32 44z"
+          fill={HAIR}
+        />
 
         <circle cx="50" cy={eyeY} r="3.1" fill={HAIR} />
         <circle cx="70" cy={eyeY} r="3.1" fill={HAIR} />
