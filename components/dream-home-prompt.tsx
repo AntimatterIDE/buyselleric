@@ -4,6 +4,13 @@ import { Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
+const LOADING_STEPS = [
+  "Reading your description…",
+  "Matching MLS filters…",
+  "Ranking homes by fit…",
+  "Almost there…",
+] as const;
+
 type DreamHomePromptProps = {
   /** Visual density for hero vs listings page. */
   variant?: "hero" | "listings";
@@ -21,11 +28,23 @@ export function DreamHomePrompt({
   const router = useRouter();
   const [prompt, setPrompt] = useState(defaultValue);
   const [loading, setLoading] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPrompt(defaultValue);
   }, [defaultValue]);
+
+  useEffect(() => {
+    if (!loading) {
+      setStepIndex(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      setStepIndex((i) => Math.min(i + 1, LOADING_STEPS.length - 1));
+    }, 2200);
+    return () => window.clearInterval(id);
+  }, [loading]);
 
   const submit = useCallback(
     async (e?: FormEvent) => {
@@ -36,6 +55,7 @@ export function DreamHomePrompt({
         return;
       }
       setError(null);
+      setStepIndex(0);
       setLoading(true);
       try {
         const res = await fetch("/api/listings/dream-search", {
@@ -50,13 +70,14 @@ export function DreamHomePrompt({
         };
         if (!res.ok || !data.ok || !data.href) {
           setError(data.message ?? "Something went wrong. Please try again.");
+          setLoading(false);
           return;
         }
         onSuccess?.();
+        // Keep the loader visible until the next page mounts.
         router.push(data.href);
       } catch {
         setError("Network error. Please try again.");
-      } finally {
         setLoading(false);
       }
     },
@@ -64,9 +85,12 @@ export function DreamHomePrompt({
   );
 
   const isHero = variant === "hero";
+  const progressPct = loading
+    ? Math.min(92, 18 + stepIndex * 22)
+    : 0;
 
   return (
-    <form onSubmit={submit} className="w-full">
+    <form onSubmit={submit} className="w-full" aria-busy={loading}>
       <div
         className={
           isHero
@@ -121,6 +145,31 @@ export function DreamHomePrompt({
             )}
           </button>
         </div>
+
+        {loading ? (
+          <div
+            className="mt-4 space-y-2 rounded-2xl border border-ring/25 bg-ring/5 px-3 py-3 sm:px-4"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-ring" aria-hidden />
+              <span>{LOADING_STEPS[stepIndex]}</span>
+            </div>
+            <div
+              className="h-2 overflow-hidden rounded-full bg-foreground/10"
+              aria-hidden
+            >
+              <div
+                className="h-full rounded-full bg-ring transition-[width] duration-700 ease-out"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This can take a few seconds — hang tight while we search.
+            </p>
+          </div>
+        ) : null}
       </div>
       {error ? (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">

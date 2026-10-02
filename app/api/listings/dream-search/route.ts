@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getBuyer } from "@/lib/buyer/session";
 import {
   dreamIntentToSearchParams,
   parseDreamHomeIntent,
@@ -72,6 +73,14 @@ function asStringRecord(value: unknown): Record<string, string> | undefined {
 }
 
 export async function POST(request: Request) {
+  const buyer = await getBuyer();
+  if (!buyer) {
+    return NextResponse.json(
+      { ok: false, message: "Talk to Eric is where home search lives now. Create an account to start." },
+      { status: 401 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

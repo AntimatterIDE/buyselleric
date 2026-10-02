@@ -1,16 +1,15 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { UnifiedListingCard } from "@/components/unified-listing-card";
-import { DreamFilterChips } from "@/components/dream-filter-chips";
-import { DreamPreferenceBrief } from "@/components/dream-preference-brief";
-import { DreamRefineStrip } from "@/components/dream-refine-strip";
 import { ListingsFilters } from "@/components/listings-filters";
 import { ListingsMapView } from "@/components/listings-map-view";
 import { ListingsPagination } from "@/components/listings-pagination";
 import { ListingsSearchBar } from "@/components/listings-search-bar";
+import { listSavedHomeIdsSafe } from "@/lib/buyer/data";
+import { getBuyer } from "@/lib/buyer/session";
+import { listingSaveIdentity, savedHomeComposite } from "@/lib/buyer/types";
 import { siteConfig } from "@/lib/config";
 import { ctaPrimary } from "@/lib/cta-styles";
-import { dreamChipsFromSearchParams } from "@/lib/dream-home-intent";
 import { mapFallbackCenterFromSearchQ } from "@/lib/listing-query-text";
 import {
   decodeMapPolygonQuery,
@@ -161,34 +160,10 @@ export default async function ListingsPage({
 
   const mapFallbackCenter = mapFallbackCenterFromSearchQ(filters.q);
 
-  const hasDreamSearch = Boolean(dreamText || softPrefsParam || listingFiltersHaveAmenities(filters));
-
-  const dreamChipLabels = dreamChipsFromSearchParams({
-    ...(filters.q ? { q: filters.q } : {}),
-    ...(filters.minPrice != null ? { minPrice: String(filters.minPrice) } : {}),
-    ...(filters.maxPrice != null ? { maxPrice: String(filters.maxPrice) } : {}),
-    ...(filters.minBeds != null ? { minBeds: String(filters.minBeds) } : {}),
-    ...(filters.minBaths != null ? { minBaths: String(filters.minBaths) } : {}),
-    ...(filters.minSqft != null ? { minSqft: String(filters.minSqft) } : {}),
-    ...(filters.maxSqft != null ? { maxSqft: String(filters.maxSqft) } : {}),
-    ...(filters.propertyType ? { propertyType: filters.propertyType } : {}),
-    ...(softPrefsParam ? { soft: softPrefsParam } : {}),
-    ...(baseParams.pool ? { pool: baseParams.pool } : {}),
-    ...(baseParams.garage ? { garage: baseParams.garage } : {}),
-    ...(baseParams.fireplace ? { fireplace: baseParams.fireplace } : {}),
-    ...(baseParams.waterfront ? { waterfront: baseParams.waterfront } : {}),
-    ...(baseParams.minYear ? { minYear: baseParams.minYear } : {}),
-    ...(baseParams.maxYear ? { maxYear: baseParams.maxYear } : {}),
-    ...(baseParams.maxStories ? { maxStories: baseParams.maxStories } : {}),
-    ...(baseParams.minAcres ? { minAcres: baseParams.minAcres } : {}),
-    ...(baseParams.noHoa ? { noHoa: baseParams.noHoa } : {}),
-  });
-  const mustHaveLabels = dreamChipLabels.filter((c) => c.kind === "hard").map((c) => c.label);
-  const softWantLabels = dreamChipLabels.filter((c) => c.kind === "soft").map((c) => c.label);
-  const shortlist = listings
-    .filter((l) => l.mls_id)
-    .slice(0, 3)
-    .map((l) => ({ mlsId: l.mls_id!, title: l.title }));
+  const buyer = await getBuyer();
+  const savedIds = buyer
+    ? await listSavedHomeIdsSafe(buyer.supabase, buyer.user.id)
+    : new Set<string>();
 
   return (
     <main id="main-content" className={pageMain} style={innerPageMainTopPadding}>
@@ -205,26 +180,14 @@ export default async function ListingsPage({
             : amenityFilterLoosened
               ? "Few MLS rows matched those amenity fields exactly — showing the closest homes ranked by listing remarks instead."
               : dreamText
-                ? softPrefList.length > 0 || listingFiltersHaveAmenities(filters)
-                  ? "Showing homes matched from your description — MLS amenity filters + must-have ranking."
-                  : "Showing homes matched from your dream-home description. Edit the chips to refine."
+                ? "Showing homes from a saved search. Talk to Eric if you want to change what you are looking for."
                 : filters.q
                   ? `Showing homes matching "${filters.q}"`
                   : "Browse homes across Georgia. Use filters to narrow your search."}
         </p>
 
         <div className="mt-8 flex flex-col gap-5 sm:mt-10 sm:gap-6">
-          <ListingsSearchBar
-            defaultValue={filters.q ?? ""}
-            dreamDefault={dreamText}
-            baseParams={baseParams}
-          />
-
-          <Suspense>
-            <DreamFilterChips />
-          </Suspense>
-
-          {hasDreamSearch ? <DreamRefineStrip currentParams={baseParams} /> : null}
+          <ListingsSearchBar defaultValue={filters.q ?? ""} baseParams={baseParams} />
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {(hasFilters || total > 0) ? (
@@ -252,21 +215,6 @@ export default async function ListingsPage({
             <ListingsFilters />
           </Suspense>
         </div>
-
-        {hasDreamSearch && (mustHaveLabels.length > 0 || softWantLabels.length > 0 || dreamText) ? (
-          <div className="mt-8">
-            <DreamPreferenceBrief
-              mustHaves={mustHaveLabels}
-              softWants={softWantLabels}
-              shortlist={shortlist}
-              filtersJson={{
-                ...baseParams,
-                soft: softPrefList,
-              }}
-              dreamText={dreamText}
-            />
-          </div>
-        ) : null}
 
         {view === "map" ? (
           <div className="mt-8">
@@ -305,9 +253,16 @@ export default async function ListingsPage({
               </div>
             ) : (
               <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {listings.map((l) => (
-                  <UnifiedListingCard key={l.id} listing={l} />
-                ))}
+                {listings.map((l) => {
+                  const identity = listingSaveIdentity(l);
+                  return (
+                    <UnifiedListingCard
+                      key={`${l.source}-${l.mls_id ?? l.id}`}
+                      listing={l}
+                      saved={savedIds.has(savedHomeComposite(identity.source, identity.listingKey))}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -318,9 +273,16 @@ export default async function ListingsPage({
             key={`listings-p${page}-${filters.q ?? ""}`}
             className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {listings.map((l) => (
-              <UnifiedListingCard key={l.id} listing={l} />
-            ))}
+            {listings.map((l) => {
+              const identity = listingSaveIdentity(l);
+              return (
+                <UnifiedListingCard
+                  key={`${l.source}-${l.mls_id ?? l.id}`}
+                  listing={l}
+                  saved={savedIds.has(savedHomeComposite(identity.source, identity.listingKey))}
+                />
+              );
+            })}
           </div>
         )}
 

@@ -13,17 +13,27 @@ export default async function AdminDashboardPage(): Promise<ReactNode> {
   let listingCount = 0;
   let newLeads = 0;
   let newBuyerLeads = 0;
+  let openAppointments = 0;
   let blogCount = 0;
   if (client) {
-    const [listings, subs, buyerLeads, posts] = await Promise.all([
+    const [listings, subs, buyerLeads, posts, appointmentCount] = await Promise.all([
       adminListListings(client),
       adminListSubmissions(client),
       adminListListingInquiries(client).catch(() => []),
       adminListBlogPosts(client).catch(() => []),
+      Promise.resolve(
+        client
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "requested"),
+      )
+        .then((result) => result.count ?? 0)
+        .catch(() => 0),
     ]);
     listingCount = listings.length;
     newLeads = subs.filter((s) => s.admin_status === "new").length;
     newBuyerLeads = buyerLeads.filter((s) => s.admin_status === "new").length;
+    openAppointments = appointmentCount;
     blogCount = posts.length;
   }
 
@@ -75,6 +85,14 @@ export default async function AdminDashboardPage(): Promise<ReactNode> {
           <p className="text-sm text-muted-foreground">New seller leads</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">{newLeads}</p>
           <p className="mt-2 text-sm font-medium text-foreground">View submissions →</p>
+        </Link>
+        <Link
+          href="/admin/calendar"
+          className="rounded-2xl border border-border bg-muted/20 p-6 transition-colors hover:bg-muted/40"
+        >
+          <p className="text-sm text-muted-foreground">Open appointment requests</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{openAppointments}</p>
+          <p className="mt-2 text-sm font-medium text-foreground">Confirm on the calendar →</p>
         </Link>
         <Link
           href="/admin/buyer-inquiries"

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useOverlay } from "@/lib/overlay-context";
 import { siteConfig } from "@/lib/config";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const FOOTER_HIDE_TOP = 96;
 const FOOTER_RELEASE_TOP = 160;
@@ -20,7 +21,7 @@ const sections = [
   { id: "contact", label: "Contact" },
 ];
 
-const menuItems = [
+const menuBase = [
   { label: "Home", href: "/" },
   { label: "Search", href: "/listings" },
   { label: "Sell", href: "/sell" },
@@ -36,11 +37,22 @@ export function Header() {
   const [hideOverFooter, setHideOverFooter] = useState(false);
   const [hiddenByScrollDir, setHiddenByScrollDir] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const lastScrollY = useRef(0);
   const scrollDirPrevY = useRef(0);
   const { isOverlayOpen } = useOverlay();
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+    void supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(Boolean(session?.user));
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -84,6 +96,16 @@ export function Header() {
         const path = window.location.pathname;
         if (path === "/listings" || path.startsWith("/listings/")) {
           setActiveSection("Search");
+        } else if (path.startsWith("/talk")) {
+          setActiveSection("Talk to Eric");
+        } else if (path.startsWith("/account")) {
+          setActiveSection(signedIn ? "Account" : "Log in");
+        } else if (path === "/sell") {
+          setActiveSection("Sell");
+        } else if (path.startsWith("/blog")) {
+          setActiveSection("Blog");
+        } else if (path.startsWith("/services/")) {
+          setActiveSection("Services");
         } else {
           setActiveSection(sections[0].label);
         }
@@ -93,7 +115,7 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [signedIn]);
 
   /** Homepage scroll owns “Home” vs “Search”; other routes set the pill from the path. */
   useEffect(() => {
@@ -114,12 +136,20 @@ export function Header() {
       setActiveSection("Services");
       return;
     }
+    if (pathname.startsWith("/talk")) {
+      setActiveSection("Talk to Eric");
+      return;
+    }
+    if (pathname.startsWith("/account")) {
+      setActiveSection(signedIn ? "Account" : "Log in");
+      return;
+    }
     if (pathname === "/") {
       window.requestAnimationFrame(() => {
         window.dispatchEvent(new Event("scroll"));
       });
     }
-  }, [pathname]);
+  }, [pathname, signedIn]);
 
   useEffect(() => {
     const footer = document.getElementById("contact");
@@ -187,6 +217,13 @@ export function Header() {
   }, []);
 
   if (isOverlayOpen) return null;
+
+  const accountLabel = signedIn ? "Account" : "Log in";
+  const menuItems = [
+    ...menuBase,
+    { label: "Talk to Eric", href: "/talk" },
+    { label: accountLabel, href: signedIn ? "/account" : "/account/login" },
+  ];
 
   const headerHidden = hideOverFooter || (hiddenByScrollDir && !isMenuOpen);
 
@@ -258,8 +295,15 @@ export function Header() {
           ) : null}
         </div>
 
-        {/* Desktop: expandable section pill */}
-        <div className="relative hidden min-h-[4.25rem] sm:block">
+        {/* Desktop: Talk to Eric + expandable section pill */}
+        <div className="hidden items-center gap-3 sm:flex">
+          <a
+            href="/talk"
+            className="inline-flex min-h-[4.25rem] items-center rounded-2xl bg-ring px-5 text-lg font-semibold text-white shadow-lg shadow-ring/20"
+          >
+            Talk to Eric
+          </a>
+          <div className="relative min-h-[4.25rem]">
           <div
             className="absolute top-0 right-0 w-64 overflow-hidden rounded-2xl bg-foreground/88 shadow-lg shadow-foreground/10 backdrop-blur-lg"
             style={{
@@ -317,6 +361,7 @@ export function Header() {
               </nav>
             ) : null}
           </div>
+        </div>
         </div>
       </div>
     </header>

@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingGallery } from "@/components/listing-gallery";
-import { ListingInquiryForm } from "@/components/listing-inquiry-form";
+import { ListingShowingPanel } from "@/components/listing-showing-panel";
 import { ListingStickyCta } from "@/components/listing-sticky-cta";
+import { SaveHomeButton } from "@/components/save-home-button";
+import { listSavedHomeIdsSafe } from "@/lib/buyer/data";
+import { showingRequestHref } from "@/lib/buyer/paths";
+import { getBuyer } from "@/lib/buyer/session";
+import { savedHomeComposite } from "@/lib/buyer/types";
 import { siteConfig } from "@/lib/config";
 import { ctaMortgage, ctaPrimary, ctaSecondary } from "@/lib/cta-styles";
 import { formatPriceUsd } from "@/lib/format";
@@ -60,6 +65,18 @@ export default async function ListingDetailPage({ params }: Props): Promise<Reac
         ? "Pending"
         : "For sale";
 
+  const listingPath = `/listings/${listing.slug}`;
+  const bookHref = showingRequestHref({
+    source: "manual",
+    listingKey: listing.id,
+    title: listing.title,
+    address: location,
+    path: listingPath,
+  });
+  const buyer = await getBuyer();
+  const savedIds = buyer ? await listSavedHomeIdsSafe(buyer.supabase, buyer.user.id) : new Set<string>();
+  const saved = savedIds.has(savedHomeComposite("manual", listing.id));
+
   return (
     <main
       id="main-content"
@@ -99,9 +116,21 @@ export default async function ListingDetailPage({ params }: Props): Promise<Reac
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-sm">
             {statusLabel}
           </p>
-          <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight xl:text-5xl">
-            {listing.title}
-          </h1>
+          <div className="mt-2 flex items-start justify-between gap-4">
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight xl:text-5xl">
+              {listing.title}
+            </h1>
+            <SaveHomeButton
+              source="manual"
+              listingKey={listing.id}
+              title={listing.title}
+              path={listingPath}
+              initiallySaved={saved}
+              returnTo={listingPath}
+              label={listing.title}
+              className="shrink-0 border border-border"
+            />
+          </div>
           {location ? (
             <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">{location}</p>
           ) : null}
@@ -120,9 +149,9 @@ export default async function ListingDetailPage({ params }: Props): Promise<Reac
           <aside className="lg:col-span-5">
             <div className="lg:sticky lg:top-28 lg:space-y-8">
               <div className="flex flex-col gap-4 lg:flex-col">
-                <a href="#inquiry" className={`${ctaPrimary} lg:w-full`}>
+                <Link href={bookHref} className={`${ctaPrimary} lg:w-full`}>
                   Request a showing
-                </a>
+                </Link>
                 <Link href={`tel:${siteConfig.phoneTel}`} className={`${ctaSecondary} lg:w-full`}>
                   Call {siteConfig.phoneDisplay}
                 </Link>
@@ -152,12 +181,7 @@ export default async function ListingDetailPage({ params }: Props): Promise<Reac
             </p>
 
             <div className="mt-10">
-              <ListingInquiryForm
-                listingSource="manual"
-                listingId={listing.id}
-                listingTitle={listing.title}
-                listingPath={`/listings/${listing.slug}`}
-              />
+              <ListingShowingPanel href={bookHref} title={listing.title} />
             </div>
 
             <div className="mt-12 border-t border-border pt-10">
@@ -171,7 +195,7 @@ export default async function ListingDetailPage({ params }: Props): Promise<Reac
           </article>
         </div>
       </div>
-      <ListingStickyCta />
+      <ListingStickyCta inquiryHref={bookHref} />
     </main>
   );
 }

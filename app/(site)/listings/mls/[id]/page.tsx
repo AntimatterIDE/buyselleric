@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingGallery } from "@/components/listing-gallery";
-import { ListingInquiryForm } from "@/components/listing-inquiry-form";
+import { ListingShowingPanel } from "@/components/listing-showing-panel";
 import { ListingStickyCta } from "@/components/listing-sticky-cta";
+import { SaveHomeButton } from "@/components/save-home-button";
+import { listSavedHomeIdsSafe } from "@/lib/buyer/data";
+import { showingRequestHref } from "@/lib/buyer/paths";
+import { getBuyer } from "@/lib/buyer/session";
+import { savedHomeComposite } from "@/lib/buyer/types";
 import { siteConfig } from "@/lib/config";
 import { ctaMortgage, ctaSecondary } from "@/lib/cta-styles";
 import { formatPriceUsd } from "@/lib/format";
@@ -57,6 +62,17 @@ export default async function MlsListingPage({ params }: Props): Promise<ReactNo
   const location = [listing.address_line, listing.city, listing.state, listing.postal_code]
     .filter(Boolean)
     .join(", ");
+  const listingPath = `/listings/mls/${id}`;
+  const bookHref = showingRequestHref({
+    source: "mls",
+    listingKey: listing.mls_id,
+    title,
+    address: location,
+    path: listingPath,
+  });
+  const buyer = await getBuyer();
+  const savedIds = buyer ? await listSavedHomeIdsSafe(buyer.supabase, buyer.user.id) : new Set<string>();
+  const saved = savedIds.has(savedHomeComposite("mls", listing.mls_id));
   const galleryUrls = filterDisplayImageUrls(listing.image_urls);
   const pageUrl = `${siteConfig.url}/listings/mls/${id}`;
   const jsonLd = buildMlsListingJsonLd(listing, pageUrl, siteConfig.url);
@@ -103,9 +119,21 @@ export default async function MlsListingPage({ params }: Props): Promise<ReactNo
           <span className="inline-block rounded-sm bg-ring/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white">
             For sale
           </span>
-          <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground uppercase sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-            {listing.address_line || title}
-          </h1>
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground uppercase sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
+              {listing.address_line || title}
+            </h1>
+            <SaveHomeButton
+              source="mls"
+              listingKey={listing.mls_id}
+              title={title}
+              path={listingPath}
+              initiallySaved={saved}
+              returnTo={listingPath}
+              label={title}
+              className="shrink-0 border border-border"
+            />
+          </div>
           <p className="mt-2 text-sm uppercase tracking-wide text-muted-foreground sm:text-base">
             {location}
           </p>
@@ -152,12 +180,7 @@ export default async function MlsListingPage({ params }: Props): Promise<ReactNo
         </div>
 
         <div className="mt-12 space-y-6">
-          <ListingInquiryForm
-            listingSource="mls"
-            listingId={listing.mls_id}
-            listingTitle={title}
-            listingPath={`/listings/mls/${id}`}
-          />
+          <ListingShowingPanel href={bookHref} title={title} />
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a href={`tel:${siteConfig.phoneTel}`} className={ctaSecondary}>
               Call {siteConfig.phoneDisplay}
@@ -270,7 +293,7 @@ export default async function MlsListingPage({ params }: Props): Promise<ReactNo
           <p>MLS #{listing.mls_id}</p>
         </div>
       </div>
-      <ListingStickyCta />
+      <ListingStickyCta inquiryHref={bookHref} />
     </main>
   );
 }

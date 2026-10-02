@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { UnifiedListingCard } from "@/components/unified-listing-card";
+import { listSavedHomeIdsSafe } from "@/lib/buyer/data";
+import { getBuyer } from "@/lib/buyer/session";
+import { listingSaveIdentity, savedHomeComposite } from "@/lib/buyer/types";
 import { siteConfig } from "@/lib/config";
 import { ctaMutedOutline, ctaPrimary } from "@/lib/cta-styles";
 import { getFeaturedUnifiedListings } from "@/lib/listings-queries";
 import { eyebrow, lead, sectionTitle, sectionY, siteContainer } from "@/lib/ui";
 
 export async function FeaturedListings() {
-  const featured = await getFeaturedUnifiedListings();
+  const [featured, buyer] = await Promise.all([getFeaturedUnifiedListings(), getBuyer()]);
+  const savedIds = buyer
+    ? await listSavedHomeIdsSafe(buyer.supabase, buyer.user.id)
+    : new Set<string>();
 
   return (
     <section id="featured-listings" className={`featured-listings bg-background ${sectionY}`}>
@@ -36,9 +42,16 @@ export async function FeaturedListings() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {featured.map((l) => (
-              <UnifiedListingCard key={`${l.source}-${l.mls_id ?? l.id}`} listing={l} />
-            ))}
+            {featured.map((l) => {
+              const identity = listingSaveIdentity(l);
+              return (
+                <UnifiedListingCard
+                  key={`${l.source}-${l.mls_id ?? l.id}`}
+                  listing={l}
+                  saved={savedIds.has(savedHomeComposite(identity.source, identity.listingKey))}
+                />
+              );
+            })}
           </div>
         )}
       </div>
