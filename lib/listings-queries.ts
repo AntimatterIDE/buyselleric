@@ -33,6 +33,7 @@ import {
 import { applyZipCentroidPinCoords, listingMatchesDrawnPolygon } from "@/lib/map-pin-coords";
 import type { MapPolygonVertex } from "@/lib/map-polygon-query";
 import { parseCityStateSearchQuery } from "@/lib/listing-query-text";
+import { preferListingsSearchFromDb } from "@/lib/listings-search-source";
 import {
   hasListingFirmName,
   hasMlsAttribution,
@@ -42,6 +43,8 @@ import {
 import { fetchRetsAttributionForMlsId, isRetsConfigured } from "@/lib/rets-client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ListingRow, MlsListingRow } from "@/lib/types/db";
+
+export { preferListingsSearchFromDb } from "@/lib/listings-search-source";
 
 /**
  * Live MLS feeds we currently merge from. `manual` covers Eric's hand-curated
@@ -463,8 +466,9 @@ async function searchWithMultipleFeedsPolygon(
  * function within Vercel time limits on broad queries.
  */
 export async function fetchAllPinsForMap(filters: ListingFilters): Promise<UnifiedListing[]> {
-  const bridgeOn = isBridgeListingsEnabled();
-  const sparkOn = isSparkListingsEnabled();
+  const useDb = preferListingsSearchFromDb();
+  const bridgeOn = !useDb && isBridgeListingsEnabled();
+  const sparkOn = !useDb && isSparkListingsEnabled();
 
   // Manual listings live in Supabase; gather them too so curated rows show
   // a pin alongside MLS results.
@@ -494,6 +498,18 @@ export async function fetchAllPinsForMap(filters: ListingFilters): Promise<Unifi
       all.push(...spark.rows);
     } catch (e) {
       console.warn("fetchAllPinsForMap: spark failed", e);
+    }
+  }
+  // DB-only / forced-db search: MLS pins come from synced `mls_listings`.
+  if (!bridgeOn && !sparkOn) {
+    try {
+      const mls = await fetchGamlsListingsFromSupabase(filters, {
+        skip: 0,
+        take: MAP_PINS_MAX_ROWS_PER_FEED,
+      });
+      all.push(...mls.rows);
+    } catch (e) {
+      console.warn("fetchAllPinsForMap: supabase mls failed", e);
     }
   }
 
@@ -659,8 +675,9 @@ async function searchWithDreamKeywordRank(
   const perPage = Math.min(100, Math.max(1, filters.perPage ?? 10));
   const hard = hardFiltersOnly(filters);
 
-  const bridgeOn = isBridgeListingsEnabled();
-  const sparkOn = isSparkListingsEnabled();
+  const useDb = preferListingsSearchFromDb();
+  const bridgeOn = !useDb && isBridgeListingsEnabled();
+  const sparkOn = !useDb && isSparkListingsEnabled();
 
   let candidates: UnifiedListing[] = [];
 
@@ -847,8 +864,9 @@ async function searchWithFiltersCore(
     return searchWithDreamKeywordRank(filters, options);
   }
 
-  const bridgeOn = isBridgeListingsEnabled();
-  const sparkOn = isSparkListingsEnabled();
+  const useDb = preferListingsSearchFromDb();
+  const bridgeOn = !useDb && isBridgeListingsEnabled();
+  const sparkOn = !useDb && isSparkListingsEnabled();
 
   if (bridgeOn && sparkOn) {
     return searchWithMultipleFeeds(filters, options);

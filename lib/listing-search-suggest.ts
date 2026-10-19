@@ -1,5 +1,6 @@
 import { bridgeGetSearchSuggestions, isBridgeListingsEnabled } from "@/lib/bridge-listings";
 import { localGaSearchSuggestions } from "@/lib/ga-location-suggest";
+import { preferListingsSearchFromDb } from "@/lib/listings-search-source";
 import { isSparkListingsEnabled, sparkGetSearchSuggestions } from "@/lib/spark-listings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -57,8 +58,9 @@ export async function getSearchSuggestions(raw: string): Promise<SearchSuggestio
 
   const local = localGaSearchSuggestions(q);
 
-  const bridgeOn = isBridgeListingsEnabled();
-  const sparkOn = isSparkListingsEnabled();
+  const useDb = preferListingsSearchFromDb();
+  const bridgeOn = !useDb && isBridgeListingsEnabled();
+  const sparkOn = !useDb && isSparkListingsEnabled();
 
   if (bridgeOn && sparkOn) {
     const settled = await Promise.allSettled([
